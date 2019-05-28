@@ -1,0 +1,376 @@
+# Title: Lab 4       	Filename:
+# Author:       	Date:
+# Description:
+# Input: a number between 1-99
+# Output: An isosceles triangle
+################# Data segment #####################
+.data
+ 
+all_options: .asciiz "The options are:\n 1. Enter a number (base 10)\n2. Replace a number (base 10)\n3. DEL a number (base 10)\n 4. Find a number in the array (base 10) \n 5. Find average (base 2-10) \n 6. Find Max (base 2-10) \n 7. Print the array elements (base 2-10) \n 9. END"
+Option: .asciiz "\n your oprion:"
+NUM: .word 0
+Array: .word 0:30
+JumpTable: .word top , case1, case2 ,case3, case4, case5, case6, case7, case9
+Is_Full: .asciiz "The array is full.\n"
+Add_Number: .asciiz "What number to add ?"
+Exsits: .asciiz "The number already exists, is value:"
+Add_Sueccessfully: .asciiz "The number added Successfully\n"
+Replace_To: .asciiz "What number to replace?"
+Not_ExsitsReplace: .asciiz "The number dosen't exists, unable to replace\n"
+Not_ExsitsDel: .asciiz "The number dosen't exists, unable to delete\n"
+Replace_Number1:.asciiz "Replace the number"
+Replace_Number2:.asciiz "(in index"
+Replace_Number3: .asciiz ") with what number ?"
+Number_Replaced: .asciiz "The number replaced successfully"
+Is_Empty: .asciiz "The array is empty"
+Delete: .asciiz "What number to delete?"
+Deleted_Sueccessfully: .asciiz "The number deleted successfully"
+Find: .asciiz "What number to find?"
+Number_Found: .asciiz "The number found, is index: "
+Number_NotFound: .asciiz "The number not found"
+Which_Radix: .asciiz "In Which radix to print (2-10)?"
+The_Average: .asciiz "The average is:"
+The_IndexMax: .asciiz "The index of the max is:"
+The_Max: .asciiz "The max is: "
+
+.text
+.globl main
+main:	
+la $a2 ,Array
+la $a1 ,NUM
+top:
+
+	li $v0,4
+	la $a0, all_options
+	syscall
+	la $a0 ,Option
+	syscall
+	li $v0,5
+	syscall
+	la $a3,JumpTable
+	sll $t0,$v0,2
+	add $t1,$a3,$t0
+	lw $t2,0($t1)
+	jr $t2
+case1:
+	jal ADD_NUMPBER
+	j top
+
+case2:
+	jal REPLACE
+	j top
+
+case3:
+	jal DEL
+	j top
+
+case4:
+	jal FIND
+	j top
+
+case5:
+	jal AVERAGE
+	j top
+
+case6:
+	jal MAX
+	j top
+
+case7:
+	jal PRINT_ARRAY
+	j top
+	
+case9:
+	li $v0, 10	# Exit program
+	syscall
+
+ADD_NUMPBER:
+	lw $t1 ,0($a1) # t1 num of objects
+	beq $t1 ,29 ,Ptint_isFull
+	li $v0,4
+	la $a0 ,Add_Number
+	syscall
+	li $v0,5 
+	syscall
+	move $t4, $v0 # t4 the num from the user
+	addiu $sp ,$sp,-4
+	sw $ra ,0($sp)
+	la $t3 , CHECK
+	jalr $t3
+	lw $ra 0($sp)
+	addiu $sp, $sp,4
+	bne $v0,-1 ,Print_Exists
+	mul $t7, $t1,4
+	add $t7 ,$t7,$a2
+	sw $t4 ,0($t7) 
+	add  $t1,$t1,1
+	sw $t1 ,0($a1)
+	li $v0 ,4	
+	la $a0, Add_Sueccessfully
+	syscall
+	jr $ra
+		
+Ptint_isFull:
+	la $a0 , Is_Full
+	li $v0 ,4
+	syscall
+	j top
+	
+Print_Exists:
+	li $v0 ,4
+	la $a0 ,Exsits
+	syscall
+	li $v0, 1
+	move $a0,$t5
+	syscall
+	j top
+	
+CHECK:
+	li $t5,0 #cunder
+	loop1 :
+		mul $t7, $t4,4
+		add $t7 ,$t7,$a2
+		lw $t6 ,0($t7)
+		beq $t6,$v0, aqual
+		add $t5,$t5,1
+		lw $t1 ,0($a1)
+		blt $t5, $t1,loop1
+		
+	la $v0,-1
+	jr $ra
+	aqual:
+		move $v0,$t5
+		jr $ra	
+
+REPLACE:
+	addiu $sp ,$sp,-4
+	sw $ra ,0($sp)
+	bgt $a1,29,Ptint_isFull
+	li $v0 ,4
+	la $a0 ,Replace_To
+	syscall
+	li $v0,5
+	syscall
+	move $t4, $v0
+	jal  CHECK
+	beq $v0,-1 ,print_notReplace
+	li $v0,4
+	la $a0 ,Replace_Number1
+	syscall
+	li $v0, 1
+	move $a0 ,$t4 
+	syscall
+	li $v0,4
+	la $a0 ,Replace_Number2
+	syscall
+	li $v0, 1
+	move $a0 ,$t5
+	syscall
+	li $v0,4
+	la $a0 ,Replace_Number3
+	syscall
+	li $v0 ,5
+	syscall
+	jal  CHECK
+	beq $v0,-1,replace_number
+	bne $v0,-1,Exsits
+	lw $ra,($sp)
+	addiu $sp, $sp,4
+	jr $ra
+	
+print_notReplace:
+	li $v0 ,4
+	la $a0 ,Not_ExsitsReplace
+	syscall
+	j top
+	
+replace_number:
+	mul $t7, $t5,4
+	add $t7 ,$t7,$a2
+	sw $t4, 0($t7)
+	li $v0, 4
+	la $a0, Number_Replaced
+	syscall
+	jr $ra
+	
+DEL:
+	addiu $sp ,$sp,-4
+	sw $ra ,0($sp)
+	lw $t1 ,0($a1)
+	beq $t1 ,0 ,Print_isEmpty
+	li $v0,4
+	la $a0 ,Delete
+	syscall
+	li $v0 ,5
+	syscall
+	jal  CHECK
+	lw $ra,($sp)
+	addiu $sp, $sp,4
+	beq $v0,-1,print_cantDelete
+	move $t5,$v0
+	bne $t5,-1,reduction
+	jr $ra
+
+Print_isEmpty:
+	addiu $sp ,$sp,-4
+	sw $ra ,0($sp)
+	la $a0 , Is_Empty
+	li $v0 ,4
+	syscall
+	j top
+
+print_cantDelete:
+	li $v0 ,4
+	la $a0 ,Not_ExsitsDel
+	syscall
+	j top
+	
+reduction:
+	move $t5, $t6
+	add $t6, $t6,1
+	loop2 :
+		mul $t7, $t6,4
+		add $t7 ,$t7,$a2
+		lw $t4 ,0($t7)
+		mul $t7, $t5,4
+		add $t7 ,$t7,$a2
+		sw $t4, 0($t7)
+		add $t5,$t5,1
+		add $t6,$t6,1
+		blt $t6, $a1,loop2
+	li $v0 , 4
+	la $a0 ,Deleted_Sueccessfully
+	lw $t1 ,0($a1)
+	add $t1,$t1,-1
+	sw $t1 ,0($a1)
+	j top
+
+FIND:
+	li $v0,4
+	la $a0 , Find
+	syscall
+	li $v0, 5
+	syscall
+	addiu $sp ,$sp,-4
+	sw $ra ,0($sp)
+	jal  CHECK
+	lw $ra,($sp)
+	addiu $sp, $sp,4
+	move $t5,$v0
+	bne $t5,-1,number_found
+	li $v0, 4
+	la $a0 , Number_NotFound
+	syscall
+	jr $ra
+	
+number_found:
+	li $v0,4
+	la $a0 , Number_Found
+	syscall
+	li $v0, 1
+	move $a0 ,$t5
+	syscall
+	j top
+	
+AVERAGE:
+	li $t9, 0 #caunter
+	li $t8 ,9 # sum
+	loop3:
+		mul $t7, $t9,4
+		add $t7 ,$t7,$a2
+		lw $t5, 0($t7)
+		add $t8,$t8,$t5
+		add $t9, $t9,1
+		ble $t9,$a1,loop3
+	div $t6, $t8,$a1 #t6 averege
+	li $v0 ,4
+	la $a0 ,Which_Radix
+	syscall
+	li $v0 ,5
+	syscall
+	move $t5, $v0 #t5 the new radix
+
+replace_radix:
+	li $t3,0
+	li $v0 ,4
+	la $a0 ,The_Average
+	syscall
+	print_num:
+		blt $t6,$zero,print_minus
+		push:
+			rem $t4, $t6,$t5
+			div $t6, $t6,$t5
+			addiu $sp ,$sp,-4
+			sw $t4 ,0($sp)
+			add $t3,$t3,1
+			bgtz $t6,push
+		pop:
+			lw $t4,($sp)
+			addiu $sp, $sp,4
+			li $v0,1
+			move $a0,$t4
+			syscall
+			bgtz $t3,pop
+		j top
+		
+	print_minus:
+		li $v0, 11
+		li $a0, '-'
+		syscall
+		j push	
+		
+MAX:
+	li $t3 ,1 #t3 caunter
+	lw $t6 ,0($a2) #t6 max
+	li $t9 ,0 #index max
+	loop6:
+		mul $t7, $t3,4
+		add $t7 ,$t7,$a2
+		lw $t4 , 0($t7)
+		blt $t4,$t6,changeMax
+		add $t3,$t3 ,1
+		lw $t1 ,0($a1)
+		blt $t3, $t1,loop6
+	li $v0 ,4
+	la $a0 , Which_Radix
+	syscall
+	li $v0 ,5
+	syscall
+	move $t5,$v0
+	li $v0 ,4
+	la $a0 , The_IndexMax
+	syscall
+	li $v0 ,1 
+	move $a0 ,$t9
+	syscall
+	la $a0 , The_Max
+	syscall
+	j print_num
+
+changeMax:
+	move $t6,$t4
+	lw $t1 ,0($a1)
+	move $t7, $t1
+	add $t9,$t9,-1
+	jr $ra 
+
+PRINT_ARRAY:
+	li $v0 ,4
+	la $a0 , Which_Radix
+	syscall
+	li $v0 ,5
+	syscall
+	move $t5,$v0
+	li $t2,0 #cunter
+	pint_array:
+		mul $t7, $t2,4
+		add $t7 ,$t7,$a2
+		lb $t6, 0($t7)
+		j print_num
+		li $v0, 11
+		li $a0, ','
+		syscall
+		add $t2,$t2,1
+		blt $t2,$a1,pint_array
+	jr $ra		
+
